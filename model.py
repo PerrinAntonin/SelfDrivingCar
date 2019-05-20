@@ -25,25 +25,35 @@ class ConvModel(keras.Model):
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-        self.alea = Lambda(lambda x: x/127.5-1.0, input_shape=(320*160 Inpu))
-        self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
-        self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
-        self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
-
+        self.alea = Lambda(lambda x: x/127.5-1.0, input_shape=(160,320,3))
+        self.conv1_1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1_1")
+        self.conv1_2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv1_2")
         self.pool1 = keras.layers.MaxPooling2D((2, 2))
-        model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        model.add(keras.layers.MaxPooling2D((2, 2)))
-        model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        model.summary()
 
-        model.add(keras.layers.Flatten())
-        model.add(keras.layers.Dense(64, activation='relu'))
-        model.add(keras.layers.Dense(10, activation='softmax'))
-        model.summary()
+        self.conv2_1 = keras.layers.Conv2D(128, 3, activation='relu', name="conv2_1")
+        self.conv2_2 = keras.layers.Conv2D(128, 3, activation='relu', name="conv2_2")
+        self.pool2 = keras.layers.MaxPooling2D((2, 2))
+
+        self.conv3_1 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3_1")
+        self.conv3_2 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3_2")
+        self.conv3_3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3_3")
+        self.pool3 = keras.layers.MaxPooling2D((2, 2))
+
+        self.conv4_1 = keras.layers.Conv2D(128, 3, activation='relu', name="conv4_1")
+        self.conv4_2 = keras.layers.Conv2D(128, 3, activation='relu', name="conv4_2")
+        self.conv4_3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv4__3")
+        self.pool4 = keras.layers.MaxPooling2D((2, 2))
+
+        self.conv5_1 = keras.layers.Conv2D(128, 3, activation='relu', name="conv5_1")
+        self.conv5_2 = keras.layers.Conv2D(128, 3, activation='relu', name="conv5_2")
+        self.conv5_3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv5_3")
+        self.pool5 = keras.layers.MaxPooling2D((2, 2))
+
         # Flatten the convolution
         self.flatten = keras.layers.Flatten(name="flatten")
-        # Dense layers
-        self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
+        # Add layers
+        self.d1 = keras.layers.Dense(256, activation='relu', name="d1")
+        self.d2 = keras.layers.Dense(128, activation='relu', name="d2")
         self.out = keras.layers.Dense(10, activation='softmax', name="output")
 
     def call(self, image):
