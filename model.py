@@ -57,12 +57,34 @@ class ConvModel(keras.Model):
         self.out = keras.layers.Dense(10, activation='softmax', name="output")
 
     def call(self, image):
-        conv1 = self.conv1(image)
-        conv2 = self.conv2(conv1)
-        conv3 = self.conv3(conv2)
-        flatten = self.flatten(conv3)
+        alea = self.alea(image)
+        conv1_1 = self.conv1_1(alea)
+        conv1_2 = self.conv1_2(conv1_1)
+        pool1 =self.pool1(conv1_2)
+                
+        conv2_1 = self.conv2_1(pool1)
+        conv2_2 = self.conv2_2(conv1_1)
+        pool2 =self.pool2(conv2_2)
+        
+        conv3_1 = self.conv3_1(pool2)
+        conv3_2 = self.conv3_2(conv3_1)
+        conv3_3 = self.conv3_3(conv3_2)
+        pool3 =self.pool3(conv3_3)
+        
+        conv4_1 = self.conv4_1(pool3)
+        conv4_2 = self.conv4_2(conv4_1)
+        conv4_3 = self.conv4_3(conv4_2)
+        pool4 =self.pool4(conv4_3)
+        
+        conv5_1 = self.conv5_1(pool4)
+        conv5_2 = self.conv5_2(conv5_1)
+        conv5_3 = self.conv5_3(conv5_2)
+        pool5 =self.pool1(conv5_3)
+
+        flatten = self.flatten(pool5)
         d1 = self.d1(flatten)
-        output = self.out(d1)
+        d2 = self.d2(d1)
+        output = self.out(d2)
         return output
 
 
