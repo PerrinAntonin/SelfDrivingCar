@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+# Just disables the warning, doesn't enable AVX/FMA
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import csv
-
+import cv2
 import os
 import numpy as np
 import random
@@ -10,15 +13,15 @@ from random import shuffle
 import pandas as pd
 
 from sklearn.model_selection import train_test_split
-
 from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Cropping2D, Lambda, Dropout
+from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Lambda, Dropout
 from tensorflow.python import keras
+from tensorflow.python.keras import metrics, optimizers, losses
+import tensorflow as tf
 
 
+assert hasattr(tf, "function") # Be sure to use tensorflow 2.0
 DATA_PATH = "data/"
-DATA_IMG = "data/"
 
 # création du reseaux convolutif
 class ConvModel(keras.Model):
@@ -54,7 +57,8 @@ class ConvModel(keras.Model):
         # Add layers
         self.d1 = keras.layers.Dense(256, activation='relu', name="d1")
         self.d2 = keras.layers.Dense(128, activation='relu', name="d2")
-        self.out = keras.layers.Dense(10, activation='softmax', name="output")
+        self.out = keras.layers.Dense(1, activation='softmax', name="output")
+        
 
     def call(self, image):
         alea = self.alea(image)
@@ -96,6 +100,27 @@ def load_data():
     return X_train, X_test, y_train, y_test
 
 
+@tf.function
+def train_step(image, targets):
+    with tf.GradientTape() as tape:
+        # Make a prediction
+        predictions = ConvModel(image)
+        # Get the error/loss using the loss_object previously defined
+        loss = loss_object(targets, predictions)
+    # Compute the gradient which respect to the loss
+    gradients = tape.gradient(loss, model.trainable_variables)
+    # Change the weights of the model
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    # The metrics are accumulate over time. You don't need to average it yourself.
+    train_loss(loss)
+
+@tf.function
+def valid_step(image, targets):
+    predictions = ConvModel(image)
+    t_loss = loss_object(targets, predictions)
+    # Set the metrics for the test
+    valid_loss(t_loss)
+    valid_accuracy(targets, predictions)
 
 
 def main():
@@ -103,8 +128,53 @@ def main():
         Main function to train the model
     """
     data = load_data()
-    print(data[3])
+    model = ConvModel()
+    x_train = data[0]
+    y_train = data[2]
+    x_valid = data[1]
+    y_valid = data[3]
 
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+    valid_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
+
+    BATCH_SIZE = 64
+    loss_object = losses.SparseCategoricalCrossentropy()    
+    optimizer = optimizers.Adam()
+    #track the evolution
+    # Loss
+    train_loss = metrics.Mean(name='train_loss')
+    valid_loss = metrics.Mean(name='valid_loss')
+    # Accuracy
+    train_accuracy = metrics.SparseCategoricalAccuracy(name='train_accuracy')
+    valid_accuracy = metrics.SparseCategoricalAccuracy(name='valid_accuracy')
+
+    epoch = 10
+    batch_size = 32
+    b = 0
+    for epoch in range(epoch):
+        # Training set
+        for images_batch, targets_batch in train_dataset.batch(batch_size):
+            train_step(images_batch, targets_batch)
+            template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
+            print(template.format(
+                b, len(targets), train_loss.result(), 
+                train_accuracy.result()*100
+            ), end="")
+            b += batch_size
+        # Validation set
+        for images_batch, targets_batch in valid_dataset.batch(batch_size):
+            valid_step(images_batch, targets_batch)
+
+        template = '\nEpoch {}, Valid Loss: {}, Valid Accuracy: {}'
+        print(template.format(
+            epoch+1,
+            valid_loss.result(), 
+            valid_accuracy.result()*100)
+        )
+        valid_loss.reset_states()
+        valid_accuracy.reset_states()
+        train_accuracy.reset_states()
+        train_loss.reset_states()
 
 
 if __name__ == '__main__':
