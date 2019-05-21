@@ -1,0 +1,42 @@
+dataset_dir = "quick_draw_dataset"
+files = [name for name in os.listdir(dataset_dir) if ".npy" in name]
+max_size_per_cl = 1500
+draw_class = []
+
+# calcul de la taille de la dataset
+size = 0
+for name in files:
+    draws = np.load(os.path.join(dataset_dir, name))
+    draws = draws[:max_size_per_cl]  # Take only 10 000 draw
+    size += draws.shape[0]
+
+print(draws)
+# buffer afin de stocké les data
+images = np.zeros((size, 28, 28))
+targets = np.zeros((size,))
+
+it = 0
+t = 0
+
+for name in files:
+    # "ouverture" des dossier et  ajoue aux bonne classes
+    draw_class.append(name.replace("full_numpy_bitmap_", "").replace(".npy", ""))
+    draws = np.load(os.path.join(dataset_dir, name))
+    draws = draws[:max_size_per_cl]  # On en prend seulement 1500
+    # ajoute les images au buffer
+    images[it:it + draws.shape[0]] = np.invert(draws.reshape(-1, 28, 28))
+    targets[it:it + draws.shape[0]] = t
+    # Iter
+    it += draws.shape[0]
+    t += 1
+print(images)
+# conversion des images de float 64 en 32 car con2d veut du 32
+images = images.astype(np.float32)
+# mélange
+indexes = np.arange(size)
+np.random.shuffle(indexes)
+images = images[indexes]
+targets = targets[indexes]
+
+# séparation de notre test d'entrainement et de validation
+images, images_valid, targets, targets_valid = train_test_split(images, targets, test_size=0.33)

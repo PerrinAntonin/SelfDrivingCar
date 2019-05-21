@@ -11,7 +11,7 @@ import numpy as np
 import random
 from random import shuffle
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Lambda, Dropout
@@ -22,6 +22,14 @@ import tensorflow as tf
 
 assert hasattr(tf, "function") # Be sure to use tensorflow 2.0
 DATA_PATH = "data/"
+
+def load_data():
+    data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+    X = data_df[['center', 'left', 'right']].values
+    y = data_df['steering'].values
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    return X_train, X_test, y_train, y_test
 
 # création du reseaux convolutif
 class ConvModel(keras.Model):
@@ -92,92 +100,86 @@ class ConvModel(keras.Model):
         return output
 
 
-def load_data():
-    data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
-    X = data_df[['center', 'left', 'right']].values
-    y = data_df['steering'].values
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-    return X_train, X_test, y_train, y_test
+
+
+data = load_data()
+model = ConvModel()
+
+x_train = data[0]
+y_train = data[2]
+x_valid = data[1]
+y_valid = data[3]
+
+x_train = x_train.astype(np.float32)
+
+train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+valid_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
+
+
+BATCH_SIZE = 64
+
+loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+optimizer = tf.keras.optimizers.Adam()
+#track the evolution
+# Loss
+train_loss = metrics.Mean(name='train_loss')
+valid_loss = metrics.Mean(name='valid_loss')
+# Accuracy
+train_accuracy = metrics.SparseCategoricalAccuracy(name='train_accuracy')
+valid_accuracy = metrics.SparseCategoricalAccuracy(name='valid_accuracy')
 
 
 @tf.function
 def train_step(image, targets):
+    # permet de surveiller les opérations réalisé afin de calculer le gradient
     with tf.GradientTape() as tape:
-        # Make a prediction
-        predictions = ConvModel(image)
-        # Get the error/loss using the loss_object previously defined
+        # fait une prediction
+        predictions = model(image)
+        # calcul de l'erreur e nfonction de la prediction et des targets
         loss = loss_object(targets, predictions)
-    # Compute the gradient which respect to the loss
+    # calcul du gradient en fonction du loss
+    # trainable_variables est la lst des variable entrainable dans le model
     gradients = tape.gradient(loss, model.trainable_variables)
-    # Change the weights of the model
+    # changement des poids grace aux gradient
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-    # The metrics are accumulate over time. You don't need to average it yourself.
+    # ajout de notre loss a notre vecteur de stockage
     train_loss(loss)
+    train_accuracy(targets, predictions)
 
 @tf.function
+# vérifier notre accuracy de notre model afin d'evité l'overfitting
 def valid_step(image, targets):
-    predictions = ConvModel(image)
+    predictions = model(image)
     t_loss = loss_object(targets, predictions)
-    # Set the metrics for the test
+    # mets a jour les metrics
     valid_loss(t_loss)
     valid_accuracy(targets, predictions)
+        
 
-
-def main():
-    """
-        Main function to train the model
-    """
-    data = load_data()
-    model = ConvModel()
-    x_train = data[0]
-    y_train = data[2]
-    x_valid = data[1]
-    y_valid = data[3]
-
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    valid_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
-
-    BATCH_SIZE = 64
-    loss_object = losses.SparseCategoricalCrossentropy()    
-    optimizer = optimizers.Adam()
-    #track the evolution
-    # Loss
-    train_loss = metrics.Mean(name='train_loss')
-    valid_loss = metrics.Mean(name='valid_loss')
-    # Accuracy
-    train_accuracy = metrics.SparseCategoricalAccuracy(name='train_accuracy')
-    valid_accuracy = metrics.SparseCategoricalAccuracy(name='valid_accuracy')
-
-    epoch = 10
-    batch_size = 32
-    b = 0
-    for epoch in range(epoch):
-        # Training set
-        for images_batch, targets_batch in train_dataset.batch(batch_size):
-            train_step(images_batch, targets_batch)
-            template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
-            print(template.format(
-                b, len(targets), train_loss.result(), 
-                train_accuracy.result()*100
-            ), end="")
-            b += batch_size
-        # Validation set
-        for images_batch, targets_batch in valid_dataset.batch(batch_size):
-            valid_step(images_batch, targets_batch)
-
-        template = '\nEpoch {}, Valid Loss: {}, Valid Accuracy: {}'
+epoch = 10
+batch_size = 32
+b = 0
+for epoch in range(epoch):
+    # Training set
+    for images_batch, targets_batch in train_dataset.batch(batch_size):
+        train_step(images_batch, targets_batch)
+        template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
-            epoch+1,
-            valid_loss.result(), 
-            valid_accuracy.result()*100)
-        )
-        valid_loss.reset_states()
-        valid_accuracy.reset_states()
-        train_accuracy.reset_states()
-        train_loss.reset_states()
+            b, len(targets), train_loss.result(), 
+            train_accuracy.result()*100
+        ), end="")
+        b += batch_size
+    # Validation set
+    for images_batch, targets_batch in valid_dataset.batch(batch_size):
+        valid_step(images_batch, targets_batch)
 
-
-if __name__ == '__main__':
-    main()
-
-
+    template = '\nEpoch {}, Valid Loss: {}, Valid Accuracy: {}'
+    print(template.format(
+        epoch+1,
+        valid_loss.result(), 
+        valid_accuracy.result()*100)
+    )
+    valid_loss.reset_states()
+    valid_accuracy.reset_states()
+    train_accuracy.reset_states()
+    train_loss.reset_states()
