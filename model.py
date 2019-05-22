@@ -11,6 +11,7 @@ import numpy as np
 import random
 from random import shuffle
 import pandas as pd
+from PIL import Image
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.models import Model
@@ -28,8 +29,7 @@ def load_data():
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-    print(X_train[10][2])
-    plt.imshow(X_train[10][2])
+
     return X_train, X_test, y_train, y_test
 
 # création du reseaux convolutif
@@ -104,7 +104,7 @@ class ConvModel(keras.Model):
 
 
 data = load_data()
-"""
+
 model = ConvModel()
 
 x_train = data[0]
@@ -112,6 +112,10 @@ y_train = data[2]
 x_valid = data[1]
 y_valid = data[3]
 
+print(x_train[2][1])
+im = Image.open(str(x_train[2][1]))
+plt.imshow(im)
+"""
 x_train = x_train.astype(np.float32)
 
 train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
