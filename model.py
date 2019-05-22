@@ -27,8 +27,9 @@ def load_data():
     data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
-    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    print(X_train[10][2])
+    plt.imshow(X_train[10][2])
     return X_train, X_test, y_train, y_test
 
 # création du reseaux convolutif
@@ -103,6 +104,7 @@ class ConvModel(keras.Model):
 
 
 data = load_data()
+"""
 model = ConvModel()
 
 x_train = data[0]
@@ -183,3 +185,4 @@ for epoch in range(epoch):
     valid_accuracy.reset_states()
     train_accuracy.reset_states()
     train_loss.reset_states()
+"""
