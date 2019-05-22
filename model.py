@@ -5,7 +5,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import csv
-import cv2
+
 import os
 import numpy as np
 import random
