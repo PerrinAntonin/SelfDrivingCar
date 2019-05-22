@@ -30,7 +30,16 @@ def load_data():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
     return X_train, X_test, y_train, y_test
 
-def get_data()
+def get_data(imageData, rotationData):
+    images, rotations = [], []
+    for index in np.size(imageData):
+        i = random.choice([0, 1, 2]) # [Center, Left, Right]
+        img = cv2.imread(os.path.join(DATA_IMG,x_train[index][i]).replace(" ", ""))
+        rotation = float(rotationData[index])
+        images.append(img)
+        rotations.append(rotation)
+        index+=1
+    return images, rotations
 
 # création du reseaux convolutif
 class ConvModel(keras.Model):
@@ -111,11 +120,10 @@ x_train = data[0]
 y_train = data[2]
 x_valid = data[1]
 y_valid = data[3]
+print(x_train)
 
-print(x_train[2][1])
-im = cv2.imread(os.path.join(DATA_IMG,x_train[2][1]).replace(" ", ""))
-
-plt.imshow(im)
+images, rotations = get_data(x_train,y_train)
+plt.imshow(image[0])
 plt.show()
 """
 x_train = x_train.astype(np.float32)
