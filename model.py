@@ -28,8 +28,9 @@ def load_data():
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-
     return X_train, X_test, y_train, y_test
+
+def get_data()
 
 # création du reseaux convolutif
 class ConvModel(keras.Model):
