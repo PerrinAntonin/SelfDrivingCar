@@ -5,13 +5,12 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import csv
-
+import cv2
 import os
 import numpy as np
 import random
 from random import shuffle
 import pandas as pd
-from PIL import Image
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.models import Model
@@ -23,7 +22,7 @@ import tensorflow as tf
 
 assert hasattr(tf, "function") # Be sure to use tensorflow 2.0
 DATA_PATH = "data/"
-
+DATA_IMG = "data/"
 def load_data():
     data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
@@ -113,8 +112,10 @@ x_valid = data[1]
 y_valid = data[3]
 
 print(x_train[2][1])
-im = Image.open(str(x_train[2][1]))
+im = cv2.imread(os.path.join(DATA_IMG,x_train[2][1]).replace(" ", ""))
+
 plt.imshow(im)
+plt.show()
 """
 x_train = x_train.astype(np.float32)
 
