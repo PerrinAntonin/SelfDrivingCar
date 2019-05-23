@@ -24,6 +24,7 @@ assert hasattr(tf, "function") # Be sure to use tensorflow 2.0
 DATA_PATH = "data/"
 DATA_IMG = "data/"
 def load_data():
+    print("search data...")
     data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
@@ -31,11 +32,14 @@ def load_data():
     return X_train, X_test, y_train, y_test
 
 def get_data(imageData, rotationData):
+    print("load data...")
     images, rotations = [], []
-    for index in np.size(imageData):
+    index = 0
+    while index < 500:
         i = random.choice([0, 1, 2]) # [Center, Left, Right]
         img = cv2.imread(os.path.join(DATA_IMG,x_train[index][i]).replace(" ", ""))
         rotation = float(rotationData[index])
+        img.astype(float)
         images.append(img)
         rotations.append(rotation)
         index+=1
@@ -46,7 +50,7 @@ class ConvModel(keras.Model):
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-        self.alea = Lambda(lambda x: x/127.5-1.0, input_shape=(160,320,3))
+        self.alea = Lambda(lambda x: (x/127.5)-1.0, input_shape=(160,320,3))
         self.conv1_1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1_1")
         self.conv1_2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv1_2")
         self.pool1 = keras.layers.MaxPooling2D((2, 2))
@@ -120,16 +124,14 @@ x_train = data[0]
 y_train = data[2]
 x_valid = data[1]
 y_valid = data[3]
-print(x_train)
+print(np.size(x_train))
 
 images, rotations = get_data(x_train,y_train)
-plt.imshow(image[0])
+images_valid, rotations_valid = get_data(x_valid,y_valid)
+plt.imshow(images[221])
 plt.show()
-"""
-x_train = x_train.astype(np.float32)
-
-train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-valid_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
+train_dataset = tf.data.Dataset.from_tensor_slices((images, rotations))
+valid_dataset = tf.data.Dataset.from_tensor_slices((images_valid, rotations_valid))
 
 
 BATCH_SIZE = 64
@@ -199,4 +201,5 @@ for epoch in range(epoch):
     valid_accuracy.reset_states()
     train_accuracy.reset_states()
     train_loss.reset_states()
-"""
+
+
