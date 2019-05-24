@@ -50,7 +50,7 @@ class ConvModel(keras.Model):
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-        self.alea = Lambda(lambda x: (x/127.5)-1.0, input_shape=(160,320,3))
+        self.alea = Lambda(lambda x: (x/127)-1, input_shape=(160,320,3))
         self.conv1_1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1_1")
         self.conv1_2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv1_2")
         self.pool1 = keras.layers.MaxPooling2D((2, 2))
@@ -153,7 +153,7 @@ def train_step(image, targets):
     with tf.GradientTape() as tape:
         # fait une prediction
         predictions = model(image)
-        # calcul de l'erreur e nfonction de la prediction et des targets
+        # calcul de l'erreur en fonction de la prediction et des targets
         loss = loss_object(targets, predictions)
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
@@ -180,6 +180,8 @@ b = 0
 for epoch in range(epoch):
     # Training set
     for images_batch, targets_batch in train_dataset.batch(batch_size):
+        print(images_batch)
+        print(targets_batch)
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
