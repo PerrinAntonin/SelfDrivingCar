@@ -13,6 +13,7 @@ from random import shuffle
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Lambda, Dropout
 from tensorflow.python import keras
@@ -31,19 +32,43 @@ def load_data():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
     return X_train, X_test, y_train, y_test
 
-def get_data(imageData, rotationData):
+def get_data(batch_size,imageData, rotationData):
     print("load data...")
-    images, rotations = [], []
-    index = 0
-    while index < 500:
+    rotations = []
+    images = np.empty(1)
+    print(images)
+    angle_correction = [0., 0.25, -.25]
+    for index in range(0,100):
         i = random.choice([0, 1, 2]) # [Center, Left, Right]
+        print("testtest",x_train[index][i])
         img = cv2.imread(os.path.join(DATA_IMG,x_train[index][i]).replace(" ", ""))
-        rotation = float(rotationData[index])
-        img.astype(float)
-        images.append(img)
-        rotations.append(rotation)
-        index+=1
-    return images, rotations
+        if img is None: 
+            continue
+
+        print(os.path.join(DATA_IMG,x_train[index][i]))
+        #converti la couleur de l'image
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #recupere la rotation A VERIFIER SI LES VALEUR RECUPERER CORRESPOND
+        if index%3==0:
+            subIndex=index//3
+            rotation = float(rotationData[subIndex])
+            #print("wi",rotation)
+
+            #ajou de la correction
+        #print("index:",index)
+        #print("before",rotation)
+        rotation = rotation + angle_correction[i]
+        print("after",rotation)
+        #ajou des informations a la liste
+        images = np.append(images,img)
+        rotations = np.append(rotations,rotation)
+        #images.append(img)
+        #rotations.append(rotation)
+        #print(images)
+
+        if len(images) >= batch_size:
+            print("end loading",len(images))
+            return images, rotations
 
 # création du reseaux convolutif
 class ConvModel(keras.Model):
@@ -124,14 +149,43 @@ x_train = data[0]
 y_train = data[2]
 x_valid = data[1]
 y_valid = data[3]
-print(np.size(x_train))
+print("xtrain",x_train)
 
-images, rotations = get_data(x_train,y_train)
-images_valid, rotations_valid = get_data(x_valid,y_valid)
-plt.imshow(images[221])
+images, rotations = get_data(20,x_train,y_train)
+images_valid, rotations_valid = get_data(20,x_valid,y_valid)
+
+# conversion des images de float 64 en 32 car con2d veut du 32
+#images = images.astype(np.float32)
+# conversion des images de float 64 en 32 car con2d veut du 32
+#images_valid = images_valid.astype(np.float32)
+    
+plt.title(rotations[10])
+plt.imshow(images[10], cmap="gray")
 plt.show()
-train_dataset = tf.data.Dataset.from_tensor_slices((images, rotations))
-valid_dataset = tf.data.Dataset.from_tensor_slices((images_valid, rotations_valid))
+
+images=np.array(images)
+rotations = np.array(rotations)
+print("rotation shape",rotations.shape)
+images_valid=np.array(images_valid)
+print("image before shape",images.shape)
+images = np.reshape(images,(-1, 160,320))
+images_valid = np.reshape(images_valid,(-1, 160,320))
+print("image after shape",images.shape)
+
+# Normalisation
+print("Moyenne et ecart type des images", images.mean(), images.std())
+scaler = StandardScaler()
+scaled_images = scaler.fit_transform(images.reshape(-1, 160*320))
+scaled_images_valid = scaler.transform(images_valid.reshape(-1, 160*320))
+print("Moyenne et ecart type des images normalisé", scaled_images.mean(), scaled_images.std())
+
+
+scaled_images = scaled_images.reshape(-1, 160, 320, 1)
+scaled_images_valid = scaled_images_valid.reshape(-1, 160, 320, 1)
+print("after scaled",rotations.shape)
+print("after scaled",images.shape)
+train_dataset = tf.data.Dataset.from_tensor_slices((scaled_images, rotations))
+valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
 
 
 BATCH_SIZE = 64
@@ -149,6 +203,7 @@ valid_accuracy = metrics.SparseCategoricalAccuracy(name='valid_accuracy')
 
 @tf.function
 def train_step(image, targets):
+    print(targets)
     # permet de surveiller les opérations réalisé afin de calculer le gradient
     with tf.GradientTape() as tape:
         # fait une prediction
@@ -177,11 +232,14 @@ def valid_step(image, targets):
 epoch = 10
 batch_size = 32
 b = 0
+print(train_dataset.batch(batch_size))
 for epoch in range(epoch):
     # Training set
-    for images_batch, targets_batch in train_dataset.batch(batch_size):
+    for (images_batch, targets_batch) in train_dataset.batch(batch_size):
         print(images_batch)
         print(targets_batch)
+        print("shape of images batch",images_batch.shape)
+
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
@@ -203,5 +261,3 @@ for epoch in range(epoch):
     valid_accuracy.reset_states()
     train_accuracy.reset_states()
     train_loss.reset_states()
-
-
