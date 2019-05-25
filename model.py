@@ -68,40 +68,44 @@ class ConvModel(keras.Model):
         super(ConvModel, self).__init__()
         # Convolutions
         self.alea = Lambda(lambda x: (x/127)-1, input_shape=(160,320,3))
-        self.conv1_1 = keras.layers.Conv2D(64, (3,3), activation='relu', name="conv1_1")
-        self.conv1_2 = keras.layers.Conv2D(64, (3,3), activation='relu', name="conv1_2")
-        self.pool1 = keras.layers.MaxPooling2D((2, 2))
+        self.crop = keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), name="crop")
+        self.conv1_1 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_1")
+        self.conv1_2 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_2")
+        self.pool1 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
 
-        self.conv2_1 = keras.layers.Conv2D(128, (3,3), activation='relu', name="conv2_1")
-        self.conv2_2 = keras.layers.Conv2D(128, (3,3), activation='relu', name="conv2_2")
-        self.pool2 = keras.layers.MaxPooling2D((2, 2))
+        self.conv2_1 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_1")
+        self.conv2_2 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_2")
+        self.pool2 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
 
-        self.conv3_1 = keras.layers.Conv2D(256, (3,3), activation='relu', name="conv3_1")
-        self.conv3_2 = keras.layers.Conv2D(256, (3,3), activation='relu', name="conv3_2")
-        self.conv3_3 = keras.layers.Conv2D(256, (3,3), activation='relu', name="conv3_3")
-        self.pool3 = keras.layers.MaxPooling2D((2, 2))
+        self.conv3_1 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_1")
+        self.conv3_2 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_2")
+        self.pool3 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
 
-        self.conv4_1 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv4_1")
-        self.conv4_2 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv4_2")
-        self.conv4_3 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv4_3")
-        self.pool4 = keras.layers.MaxPooling2D((2, 2))
+        self.conv4_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_1")
+        self.conv4_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_2")
+        self.conv4_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_3")
+        self.pool4 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
         
-        self.conv5_1 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv5_1")
-        self.conv5_2 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv5_2")
-        self.conv5_3 = keras.layers.Conv2D(512, (2,2), activation='relu', name="conv5_3")
-        self.pool5 = keras.layers.MaxPooling2D((2, 2))
+        self.conv5_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_1")
+        self.conv5_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_2")
+        self.conv5_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_3")
+        self.pool5 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
 
         # Flatten the convolution
         self.flatten = keras.layers.Flatten(name="flatten")
         # Add layers
         self.d1 = keras.layers.Dense(4096, activation='relu', name="d1")
         self.d2 = keras.layers.Dense(2048, activation='relu', name="d2")
-        self.out = keras.layers.Dense(1, activation='softmax', name="output")
+        self.d3 = keras.layers.Dense(1024, activation='relu', name="d2")
+        self.d4 = keras.layers.Dense(512, activation='relu', name="d2")
+        self.drop = keras.layers.Dropout(0.99)
+        self.out = keras.layers.Dense(2, activation='softmax', name="output")
         
 
     def call(self, image):
         alea = self.alea(image)
-        conv1_1 = self.conv1_1(alea)
+        crop = self.crop(alea)
+        conv1_1 = self.conv1_1(crop)
         conv1_2 = self.conv1_2(conv1_1)
         pool1 =self.pool1(conv1_2)
                 
@@ -111,8 +115,7 @@ class ConvModel(keras.Model):
         
         conv3_1 = self.conv3_1(pool2)
         conv3_2 = self.conv3_2(conv3_1)
-        conv3_3 = self.conv3_3(conv3_2)
-        pool3 =self.pool3(conv3_3)
+        pool3 =self.pool3(conv3_2)
         
         conv4_1 = self.conv4_1(pool3)
         conv4_2 = self.conv4_2(conv4_1)
@@ -127,8 +130,13 @@ class ConvModel(keras.Model):
         flatten = self.flatten(pool5)
         d1 = self.d1(flatten)
         d2 = self.d2(d1)
-        output = self.out(d2)
+        d3 = self.d3(d2)
+        d4 = self.d4(d3)
+        drop = self.drop(d4)
+        output = self.out(drop)
         return output
+
+
 
 
 data = load_data()
@@ -233,7 +241,7 @@ for epoch in range(epoch):
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
-            b, len(targets), train_loss.result(), 
+            b, len(targets_batch), train_loss.result(), 
             train_accuracy.result()*100
         ), end="")
         b += batch_size
