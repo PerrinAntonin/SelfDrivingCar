@@ -63,78 +63,26 @@ def get_data(batch_size,imageData, rotationData):
     return np.array(images), np.array(rotations)
 
 # création du reseaux convolutif
-class ConvModel(keras.Model):
-    def __init__(self):
-        super(ConvModel, self).__init__()
-        # Convolutions
-        self.alea = Lambda(lambda x: (x/127)-1, input_shape=(160,320,3))
-        self.crop = keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), name="crop")
-        self.conv1_1 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_1")
-        self.conv1_2 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_2")
-        self.pool1 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+def build_model():
+    """
+        Build keras model
+    """
+    model = Sequential()
+    model.add(Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3)))
+    model.add(Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3)))
+    model.add(Conv2D(8, 9, strides=(4, 4), padding="same", activation="elu"))
+    model.add(Conv2D(16, 5, strides=(2, 2), padding="same", activation="elu"))
+    model.add(Conv2D(32, 4, strides=(1, 1), padding="same", activation="elu"))
+    model.add(Flatten())
+    model.add(Dropout(.6))
+    model.add(Dense(1024, activation="elu"))
+    model.add(Dropout(.3))
+    model.add(Dense(1))
 
-        self.conv2_1 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_1")
-        self.conv2_2 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_2")
-        self.pool2 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+    #ada = optimizers.Adagrad(lr=0.001)
+    model.compile(loss="mse", optimizer="adam")
 
-        self.conv3_1 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_1")
-        self.conv3_2 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_2")
-        self.pool3 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
-
-        self.conv4_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_1")
-        self.conv4_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_2")
-        self.conv4_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_3")
-        self.pool4 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
-        
-        self.conv5_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_1")
-        self.conv5_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_2")
-        self.conv5_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_3")
-        self.pool5 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
-
-        # Flatten the convolution
-        self.flatten = keras.layers.Flatten(name="flatten")
-        # Add layers
-        self.d1 = keras.layers.Dense(4096, activation='relu', name="d1")
-        self.d2 = keras.layers.Dense(2048, activation='relu', name="d2")
-        self.d3 = keras.layers.Dense(1024, activation='relu', name="d2")
-        self.d4 = keras.layers.Dense(512, activation='relu', name="d2")
-        self.drop = keras.layers.Dropout(0.99)
-        self.out = keras.layers.Dense(2, activation='softmax', name="output")
-        
-
-    def call(self, image):
-        alea = self.alea(image)
-        crop = self.crop(alea)
-        conv1_1 = self.conv1_1(crop)
-        conv1_2 = self.conv1_2(conv1_1)
-        pool1 =self.pool1(conv1_2)
-                
-        conv2_1 = self.conv2_1(pool1)
-        conv2_2 = self.conv2_2(conv2_1)
-        pool2 =self.pool2(conv2_2)
-        
-        conv3_1 = self.conv3_1(pool2)
-        conv3_2 = self.conv3_2(conv3_1)
-        pool3 =self.pool3(conv3_2)
-        
-        conv4_1 = self.conv4_1(pool3)
-        conv4_2 = self.conv4_2(conv4_1)
-        conv4_3 = self.conv4_3(conv4_2)
-        pool4 =self.pool4(conv4_3)
-        
-        conv5_1 = self.conv5_1(pool4)
-        conv5_2 = self.conv5_2(conv5_1)
-        conv5_3 = self.conv5_3(conv5_2)
-        pool5 =self.pool5(conv5_3)
-
-        flatten = self.flatten(pool5)
-        d1 = self.d1(flatten)
-        d2 = self.d2(d1)
-        d3 = self.d3(d2)
-        d4 = self.d4(d3)
-        drop = self.drop(d4)
-        output = self.out(drop)
-        return output
+return model
 
 
 
