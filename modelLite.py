@@ -18,6 +18,11 @@ from tensorflow.python.keras import metrics, optimizers, losses
 import tensorflow as tf
 
 
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Cropping2D, Lambda, Dropout
+
+
 assert hasattr(tf, "function") # Be sure to use tensorflow 2.0
 DATA_PATH = "data/"
 DATA_IMG = "data/"
@@ -63,26 +68,29 @@ def get_data(batch_size,imageData, rotationData):
     return np.array(images), np.array(rotations)
 
 # création du reseaux convolutif
-def build_model():
-    """
-        Build keras model
-    """
-    model = Sequential()
-    model.add(Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3)))
-    model.add(Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3)))
-    model.add(Conv2D(8, 9, strides=(4, 4), padding="same", activation="elu"))
-    model.add(Conv2D(16, 5, strides=(2, 2), padding="same", activation="elu"))
-    model.add(Conv2D(32, 4, strides=(1, 1), padding="same", activation="elu"))
-    model.add(Flatten())
-    model.add(Dropout(.6))
-    model.add(Dense(1024, activation="elu"))
-    model.add(Dropout(.3))
-    model.add(Dense(1))
+# création du reseaux convolutif
+class ConvModel(keras.Model):
 
-    #ada = optimizers.Adagrad(lr=0.001)
-    model.compile(loss="mse", optimizer="adam")
+    def __init__(self):
+        super(ConvModel, self).__init__()
+        # Convolutions
+        self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
+        self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
+        self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
+        # Flatten the convolution
+        self.flatten = keras.layers.Flatten(name="flatten")
+        # Dense layers
+        self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
+        self.out = keras.layers.Dense(10, activation='softmax', name="output")
 
-return model
+    def call(self, image):
+        conv1 = self.conv1(image)
+        conv2 = self.conv2(conv1)
+        conv3 = self.conv3(conv2)
+        flatten = self.flatten(conv3)
+        d1 = self.d1(flatten)
+        output = self.out(d1)
+        return output
 
 
 
@@ -185,11 +193,11 @@ b = 0
 
 for epoch in range(epoch):
     # Training set
-    for (images_batch, targets_batch) in train_dataset.batch(batch_size):
+    for images_batch, targets_batch in train_dataset.batch(batch_size):
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
-            b, len(targets_batch), train_loss.result(), 
+            b, len(targets), train_loss.result(), 
             train_accuracy.result()*100
         ), end="")
         b += batch_size
