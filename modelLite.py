@@ -168,13 +168,17 @@ def train_step(image, targets):
         print("after creation model prediction shape",predictions)
         # calcul de l'erreur en fonction de la prediction et des targets
         loss = loss_object(targets, predictions)
+        print("test1")
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
     gradients = tape.gradient(loss, model.trainable_variables)
+    print("test2")
     # changement des poids grace aux gradient
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     # ajout de notre loss a notre vecteur de stockage
+    print("test3")
     train_loss(loss)
+    print("test4")
     train_accuracy(targets, predictions)
 
 @tf.function
@@ -192,8 +196,10 @@ batch_size = 32
 b = 0
 
 for epoch in range(epoch):
+    
     # Training set
     for images_batch, targets_batch in train_dataset.batch(batch_size):
+        
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
         print(template.format(
