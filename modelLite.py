@@ -104,6 +104,7 @@ x_valid = data[1]
 y_train = data[2]
 y_valid = data[3]
 
+# Peut etre a retirer next
 images, rotations = get_data(32,x_train,y_train)
 images_valid, rotations_valid = get_data(32,x_valid,y_valid)
 
@@ -168,17 +169,13 @@ def train_step(image, targets):
         print("after creation model prediction shape",predictions)
         # calcul de l'erreur en fonction de la prediction et des targets
         loss = loss_object(targets, predictions)
-        print("test1")
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
     gradients = tape.gradient(loss, model.trainable_variables)
-    print("test2")
     # changement des poids grace aux gradient
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     # ajout de notre loss a notre vecteur de stockage
-    print("test3")
     train_loss(loss)
-    print("test4")
     train_accuracy(targets, predictions)
 
 @tf.function
@@ -221,3 +218,7 @@ for epoch in range(epoch):
     valid_accuracy.reset_states()
     train_accuracy.reset_states()
     train_loss.reset_states()
+
+
+model.save("model.h5")
+
