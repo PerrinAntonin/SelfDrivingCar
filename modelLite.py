@@ -70,27 +70,74 @@ def get_data(batch_size,imageData, rotationData):
 # création du reseaux convolutif
 # création du reseaux convolutif
 class ConvModel(keras.Model):
-
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-        self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
-        self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
-        self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
+        self.alea = Lambda(lambda x: (x/127)-1, input_shape=(160,320,3))
+        self.crop = keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), name="crop")
+        self.conv1_1 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_1")
+        self.conv1_2 = keras.layers.Conv2D(filters=64, kernel_size=[3, 3], padding="same", activation='relu', name="conv1_2")
+        self.pool1 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+
+        self.conv2_1 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_1")
+        self.conv2_2 = keras.layers.Conv2D(filters=128, kernel_size=[3, 3], padding="same", activation='relu', name="conv2_2")
+        self.pool2 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+
+        self.conv3_1 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_1")
+        self.conv3_2 = keras.layers.Conv2D(filters=256, kernel_size=[3, 3], padding="same", activation='relu', name="conv3_2")
+        self.pool3 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+
+        self.conv4_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_1")
+        self.conv4_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_2")
+        self.conv4_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv4_3")
+        self.pool4 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+        
+        self.conv5_1 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_1")
+        self.conv5_2 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_2")
+        self.conv5_3 = keras.layers.Conv2D(filters=512, kernel_size=[3, 3], padding="same", activation='relu', name="conv5_3")
+        self.pool5 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+
         # Flatten the convolution
         self.flatten = keras.layers.Flatten(name="flatten")
-        # Dense layers
-        self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
+        # Add layers
+        self.d1 = keras.layers.Dense(4096, activation='relu', name="d1")
+        self.d2 = keras.layers.Dense(4096, activation='relu', name="d2")
+        self.d3 = keras.layers.Dense(1000, activation='relu', name="d3")
         self.out = keras.layers.Dense(10, activation='softmax', name="output")
+        
 
     def call(self, image):
-        conv1 = self.conv1(image)
-        conv2 = self.conv2(conv1)
-        conv3 = self.conv3(conv2)
-        flatten = self.flatten(conv3)
+        alea = self.alea(image)
+        crop = self.crop(alea)
+        conv1_1 = self.conv1_1(crop)
+        conv1_2 = self.conv1_2(conv1_1)
+        pool1 =self.pool1(conv1_2)
+                
+        conv2_1 = self.conv2_1(pool1)
+        conv2_2 = self.conv2_2(conv2_1)
+        pool2 =self.pool2(conv2_2)
+        
+        conv3_1 = self.conv3_1(pool2)
+        conv3_2 = self.conv3_2(conv3_1)
+        pool3 =self.pool3(conv3_2)
+        
+        conv4_1 = self.conv4_1(pool3)
+        conv4_2 = self.conv4_2(conv4_1)
+        conv4_3 = self.conv4_3(conv4_2)
+        pool4 =self.pool4(conv4_3)
+        
+        conv5_1 = self.conv5_1(pool4)
+        conv5_2 = self.conv5_2(conv5_1)
+        conv5_3 = self.conv5_3(conv5_2)
+        pool5 =self.pool5(conv5_3)
+
+        flatten = self.flatten(pool5)
         d1 = self.d1(flatten)
-        output = self.out(d1)
+        d2 = self.d2(d1)
+        d3 = self.d3(d2)
+        output = self.out(d3)
         return output
+
 
 
 
@@ -109,9 +156,9 @@ images, rotations = get_data(32,x_train,y_train)
 images_valid, rotations_valid = get_data(32,x_valid,y_valid)
 
 # conversion des images de float 64 en 32 car con2d veut du 32
-#images = images.astype(np.float32)
+images = images.astype(np.float32)
 # conversion des images de float 64 en 32 car con2d veut du 32
-#images_valid = images_valid.astype(np.float32)
+images_valid = images_valid.astype(np.float32)
     
 plt.title(rotations[10])
 plt.imshow(images[10], cmap="gray")
@@ -143,6 +190,8 @@ print("after scaled",scaled_images.shape)
 train_dataset = tf.data.Dataset.from_tensor_slices((scaled_images, rotations))
 valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
 
+model = ConvModel()
+model.predict(scaled_images[0:1])
 
 BATCH_SIZE = 32
 
@@ -159,16 +208,15 @@ valid_accuracy = metrics.SparseCategoricalAccuracy(name='valid_accuracy')
 
 
 @tf.function
-def train_step(image, targets):
+def train_step(image, rotations):
     # permet de surveiller les opérations réalisé afin de calculer le gradient
     with tf.GradientTape() as tape:
         # fait une prediction
         predictions = model(image)
-
-        print("after creation model targets shape",targets)
+        print("after creation model rotations shape",rotations)
         print("after creation model prediction shape",predictions)
         # calcul de l'erreur en fonction de la prediction et des targets
-        loss = loss_object(targets, predictions)
+        loss = loss_object(rotations, predictions)
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
     gradients = tape.gradient(loss, model.trainable_variables)
@@ -176,44 +224,40 @@ def train_step(image, targets):
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     # ajout de notre loss a notre vecteur de stockage
     train_loss(loss)
-    train_accuracy(targets, predictions)
+    train_accuracy(rotations, predictions)
 
 @tf.function
 # vérifier notre accuracy de notre model afin d'evité l'overfitting
-def valid_step(image, targets):
+def valid_step(image, rotations):
     predictions = model(image)
-    t_loss = loss_object(targets, predictions)
+    t_loss = loss_object(rotations, predictions)
     # mets a jour les metrics
     valid_loss(t_loss)
-    valid_accuracy(targets, predictions)
+    valid_accuracy(rotations, predictions)
         
 
-epoch = 10
+epoch = 3
 batch_size = 32
-b = 0
+actual_batch = 0
 
 for epoch in range(epoch):
-    
     # Training set
     for images_batch, targets_batch in train_dataset.batch(batch_size):
-        
         train_step(images_batch, targets_batch)
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
-        print(template.format(
-            b, len(targets), train_loss.result(), 
-            train_accuracy.result()*100
-        ), end="")
-        b += batch_size
+        print(template.format(actual_batch, len(rotations),
+                              train_loss.result(), 
+                              train_accuracy.result()*100),
+                              end="")
+        actual_batch += batch_size
     # Validation set
     for images_batch, targets_batch in valid_dataset.batch(batch_size):
         valid_step(images_batch, targets_batch)
 
     template = '\nEpoch {}, Valid Loss: {}, Valid Accuracy: {}'
-    print(template.format(
-        epoch+1,
-        valid_loss.result(), 
-        valid_accuracy.result()*100)
-    )
+    print(template.format(epoch+1,
+                            valid_loss.result(), 
+                            valid_accuracy.result()*100))
     valid_loss.reset_states()
     valid_accuracy.reset_states()
     train_accuracy.reset_states()
