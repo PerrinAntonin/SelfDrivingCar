@@ -103,7 +103,7 @@ class ConvModel(keras.Model):
         self.d1 = keras.layers.Dense(4096, activation='relu', name="d1")
         self.d2 = keras.layers.Dense(4096, activation='relu', name="d2")
         self.d3 = keras.layers.Dense(1000, activation='relu', name="d3")
-        self.out = keras.layers.Dense(10, activation='softmax', name="output")
+        self.out = keras.layers.Dense(1, activation='softmax', name="output")
         
 
     def call(self, image):
