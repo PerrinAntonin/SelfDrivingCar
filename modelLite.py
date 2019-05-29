@@ -103,7 +103,7 @@ class ConvModel(keras.Model):
         self.d1 = keras.layers.Dense(4096, activation='relu', name="d1")
         self.d2 = keras.layers.Dense(4096, activation='relu', name="d2")
         self.d3 = keras.layers.Dense(1000, activation='relu', name="d3")
-        self.out = keras.layers.Dense(1, activation='softmax', name="output")
+        self.out = keras.layers.Dense(1,activation='sigmoid',  name="output")
         
 
     def call(self, image):
@@ -195,7 +195,7 @@ model.predict(scaled_images[0:1])
 
 BATCH_SIZE = 32
 
-loss_object = keras.losses.SparseCategoricalCrossentropy()
+#loss_object = keras.losses.binary_crossentropy()
 optimizer = tf.keras.optimizers.Adam()
 #track the evolution
 # Loss
@@ -213,10 +213,12 @@ def train_step(image, rotations):
     with tf.GradientTape() as tape:
         # fait une prediction
         predictions = model(image)
+        #tf.reshape(rotations, [1])
+        #tf.reshape(predictions, [1])
         print("after creation model rotations shape",rotations)
         print("after creation model prediction shape",predictions)
         # calcul de l'erreur en fonction de la prediction et des targets
-        loss = loss_object(rotations, predictions)
+        loss = keras.losses.mean_squared_error(rotations, predictions)
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
     gradients = tape.gradient(loss, model.trainable_variables)
@@ -229,8 +231,11 @@ def train_step(image, rotations):
 @tf.function
 # vérifier notre accuracy de notre model afin d'evité l'overfitting
 def valid_step(image, rotations):
+    print("validstep")
     predictions = model(image)
-    t_loss = loss_object(rotations, predictions)
+    #tf.reshape(rotations, [1])
+    #tf.reshape(predictions, [1])
+    t_loss = keras.losses.mean_squared_error(rotations, predictions)
     # mets a jour les metrics
     valid_loss(t_loss)
     valid_accuracy(rotations, predictions)
