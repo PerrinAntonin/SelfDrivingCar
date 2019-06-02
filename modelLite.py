@@ -36,8 +36,9 @@ def get_data(batch_size,imageData, rotationData):
     rotations = []
     images = []
     angle_correction = [0., 0.25, -0.25] # [Center, Left, Right]
-
+    print("size",imageData.shape)
     for index in range(0,batch_size):
+        
         i = random.choice([0, 1, 2]) # for direction
         img = cv2.imread(os.path.join(DATA_IMG,imageData[index][i]).replace(" ", ""))
         #converti la couleur de l'image
@@ -93,7 +94,7 @@ y_valid = data[3]
 
 # Peut etre a retirer next
 images, rotations = get_data(1280,x_train,y_train)
-images_valid, rotations_valid = get_data(1280,x_valid,y_valid)
+images_valid, rotations_valid = get_data(256,x_valid,y_valid)
 
 # conversion des images de float 64 en 32 car con2d veut du 32
 images = images.astype(np.float32)
@@ -120,36 +121,33 @@ scaled_images_valid = scaled_images_valid.reshape(-1, 160,320,3)
 print("scaled images after normalisation",scaled_images.shape)
 
 train_dataset = tf.data.Dataset.from_tensor_slices((scaled_images, rotations))
+#train_dataset = train_dataset.shuffle(buffer_size=1280)
+train_dataset = train_dataset.shuffle(1280 * 50)
 valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
 
 model = ConvModel()
 
 
-#loss_object = tf.keras.losses.binary_crossentropy()
+loss_object = tf.keras.losses.MeanSquaredError()
 optimizer = tf.keras.optimizers.Adam(lr=0.0001)
 #track the evolution
-# Loss
-#train_loss = metrics.Mean(name='train_loss')
-#valid_loss = metrics.Mean(name='valid_loss')
-# Accuracy
-#train_accuracy = metrics.Accuracy(name='train_accuracy')
-#valid_accuracy = metrics.Accuracy(name='valid_accuracy')
-train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
-train_accuracy = tf.keras.metrics.Accuracy('train_accuracy')
-valid_loss = tf.keras.metrics.Mean('test_loss', dtype=tf.float32)
-valid_accuracy = tf.keras.metrics.Accuracy('test_accuracy')
-
+# Define our metrics
+train_loss = tf.keras.metrics.Mean('train_loss')
+train_accuracy = tf.keras.metrics.AUC('train_accuracy')
+valid_loss = tf.keras.metrics.Mean('test_loss')
+valid_accuracy = tf.keras.metrics.AUC('test_accuracy')
 
 @tf.function
 def train_step(image, rotations):
+    
     # permet de surveiller les opérations réalisé afin de calculer le gradient
     with tf.GradientTape() as tape:
         # fait une prediction
-        predictions = model(image, training=True)
+        predictions = model(image)
         print("rotations shape after creation model",rotations)
         print("prediction shape after creation model",predictions)
         # calcul de l'erreur en fonction de la prediction et des targets
-        loss = keras.losses.mean_squared_error(rotations, predictions)
+        loss = loss_object(rotations, predictions)
         print("calcul loss",loss)
     # calcul du gradient en fonction du loss
     # trainable_variables est la lst des variable entrainable dans le model
@@ -168,34 +166,46 @@ def train_step(image, rotations):
 # vérifier notre accuracy de notre model afin d'evité l'overfitting
 def valid_step(image, rotations):
     predictions = model(image)
-    t_loss = keras.losses.mean_squared_error(rotations, predictions)
+    t_loss = loss_object(rotations, predictions)
     # mets a jour les metrics
     valid_loss(t_loss)
     valid_accuracy(rotations, predictions)
         
 
-epochs = 10
+epochs = 5
 batch_size = 32
-actual_batch = 0
+
+train_log_dir = 'logs/gradient_tape/' + 'v1' + '/train'
+test_log_dir = 'logs/gradient_tape/' + 'V1' + '/test'
+train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+
 
 for epoch in range(epochs):
     # Training set
-    for images_batch, targets_batch in train_dataset.batch(batch_size):
+    for (images_batch, targets_batch) in train_dataset.batch(batch_size):
         train_step(images_batch, targets_batch)
+        
         template = '\r Batch {}/{}, Loss: {}, Accuracy: {}'
-        print(template.format(actual_batch, len(rotations),
-                              train_loss.result(), 
-                              train_accuracy.result()*100),
-                              end="")
-        actual_batch += batch_size
+    with train_summary_writer.as_default():
+        tf.summary.scalar('loss', train_loss.result(), step=epoch)
+        tf.summary.scalar('accuracy', train_accuracy.result(), step=epoch)
+
     # Validation set
     for images_batch, targets_batch in valid_dataset.batch(batch_size):
         valid_step(images_batch, targets_batch)
 
-    template = '\nEpoch {}, Valid Loss: {}, Valid Accuracy: {}'
-    print(template.format(epoch+1,
+    with test_summary_writer.as_default():
+        tf.summary.scalar('loss', valid_loss.result(), step=epoch)
+        tf.summary.scalar('accuracy', valid_accuracy.result(), step=epoch)
+    
+    template = 'Epoch {}, Loss: {}, Accuracy: {}, valid Loss: {}, valid Accuracy: {}'
+    print (template.format(epoch+1,
+                            train_loss.result(), 
+                            train_accuracy.result()*100,
                             valid_loss.result(), 
                             valid_accuracy.result()*100))
+
     valid_loss.reset_states()
     valid_accuracy.reset_states()
     train_accuracy.reset_states()

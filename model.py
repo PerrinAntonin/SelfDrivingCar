@@ -31,13 +31,13 @@ def load_data():
     print("data find")
     return X_train, X_test, y_train, y_test
 
-def get_data(batch_size,imageData, rotationData):
+def get_data(begin_batch,end_batch,imageData, rotationData):
     print("load data...")
     rotations = []
     images = []
     angle_correction = [0., 0.25, -0.25] # [Center, Left, Right]
 
-    for index in range(0,batch_size):
+    for index in range(begin_batch,end_batch):
         i = random.choice([0, 1, 2]) # for direction
         img = cv2.imread(os.path.join(DATA_IMG,imageData[index][i]).replace(" ", ""))
         #converti la couleur de l'image
@@ -132,8 +132,8 @@ y_train = data[2]
 y_valid = data[3]
 
 # Peut etre a retirer next
-images, rotations = get_data(128,x_train,y_train)
-images_valid, rotations_valid = get_data(128,x_valid,y_valid)
+images, rotations = get_data(0,128,x_train,y_train)
+images_valid, rotations_valid = get_data(128,256,x_valid,y_valid)
 
 # conversion des images de float 64 en 32 car con2d veut du 32
 images = images.astype(np.float32)
@@ -160,7 +160,9 @@ scaled_images_valid = scaled_images_valid.reshape(-1, 160,320,3)
 print("scaled images after normalisation",scaled_images.shape)
 
 train_dataset = tf.data.Dataset.from_tensor_slices((scaled_images, rotations))
+train_dataset = train_dataset.shuffle(buffer_size=524)
 valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
+valid_dataset = train_dataset.shuffle(buffer_size=524)
 
 model = ConvModel()
 
