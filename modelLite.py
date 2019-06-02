@@ -133,9 +133,9 @@ optimizer = tf.keras.optimizers.Adam(lr=0.0001)
 #track the evolution
 # Define our metrics
 train_loss = tf.keras.metrics.Mean('train_loss')
-train_accuracy = tf.keras.metrics.AUC('train_accuracy')
+train_accuracy = tf.keras.metrics.Accuracy('train_accuracy')
 valid_loss = tf.keras.metrics.Mean('test_loss')
-valid_accuracy = tf.keras.metrics.AUC('test_accuracy')
+valid_accuracy = tf.keras.metrics.Accuracy('test_accuracy')
 
 @tf.function
 def train_step(image, rotations):
