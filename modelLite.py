@@ -55,26 +55,22 @@ def get_data(batch_size,imageData, rotationData):
     return np.array(images), np.array(rotations)
 
 # création du reseaux convolutif
-class ConvModel(tf.keras.Model):
-    
+class ConvModel(keras.Model):
+
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-        self.alea = tf.keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3))
-        self.crop = tf.keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3))
-        self.conv1 = tf.keras.layers.Conv2D(8, 9, strides=(4, 4), padding="same", activation='elu', name="conv1")
-        self.conv2 = tf.keras.layers.Conv2D(16, 5, strides=(2, 2), padding="same", activation='elu', name="conv2")
-        self.conv3 = tf.keras.layers.Conv2D(32, 4, strides=(1, 1), padding="same", activation='elu', name="conv3")
+        self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
+        self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
+        self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
         # Flatten the convolution
-        self.flatten = tf.keras.layers.Flatten(name="flatten")       
+        self.flatten = keras.layers.Flatten(name="flatten")
         # Dense layers
-        self.d1 = tf.keras.layers.Dense(1024, activation='elu', name="d1")
-        self.out = tf.keras.layers.Dense(1, activation='sigmoid', name="output")
+        self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
+        self.out = keras.layers.Dense(1, activation='sigmoid', name="output")
 
     def call(self, image):
-        alea = self.alea(image)
-        crop = self.crop(alea)
-        conv1 = self.conv1(crop)
+        conv1 = self.conv1(image)
         conv2 = self.conv2(conv1)
         conv3 = self.conv3(conv2)
         flatten = self.flatten(conv3)
