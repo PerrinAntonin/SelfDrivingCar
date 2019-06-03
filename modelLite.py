@@ -62,13 +62,13 @@ class ConvModel(tf.keras.Model):
         # Convolutions
         self.alea = tf.keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3))
         self.crop = tf.keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3))
-        self.conv1 = tf.keras.layers.Conv2D(8, 9, strides=(4, 4), padding="same", activation='elu', name="conv1")
-        self.conv2 = tf.keras.layers.Conv2D(16, 5, strides=(2, 2), padding="same", activation='elu', name="conv2")
-        self.conv3 = tf.keras.layers.Conv2D(32, 4, strides=(1, 1), padding="same", activation='elu', name="conv3")
+        self.conv1 = tf.keras.layers.Conv2D(2, 9, strides=(4, 4), padding="same", activation='elu', name="conv1")
+        self.conv2 = tf.keras.layers.Conv2D(4, 5, strides=(2, 2), padding="same", activation='elu', name="conv2")
+        self.conv3 = tf.keras.layers.Conv2D(8, 4, strides=(1, 1), padding="same", activation='elu', name="conv3")
         # Flatten the convolution
         self.flatten = tf.keras.layers.Flatten(name="flatten")       
         # Dense layers
-        self.d1 = tf.keras.layers.Dense(1024, activation='elu', name="d1")
+        self.d1 = tf.keras.layers.Dense(100, activation='elu', name="d1")
         self.out = tf.keras.layers.Dense(1, activation='sigmoid', name="output")
 
     def call(self, image):
@@ -133,9 +133,9 @@ optimizer = tf.keras.optimizers.Adam(lr=0.0001)
 #track the evolution
 # Define our metrics
 train_loss = tf.keras.metrics.Mean('train_loss')
-train_accuracy = tf.keras.metrics.AUC('train_accuracy')
+train_accuracy = tf.keras.metrics.Accuracy('train_accuracy')
 valid_loss = tf.keras.metrics.Mean('test_loss')
-valid_accuracy = tf.keras.metrics.AUC('test_accuracy')
+valid_accuracy = tf.keras.metrics.Accuracy('test_accuracy')
 
 @tf.function
 def train_step(image, rotations):
