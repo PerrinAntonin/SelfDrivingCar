@@ -27,7 +27,7 @@ def load_data():
     data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=0)
     print("data find")
     return X_train, X_test, y_train, y_test
 
@@ -60,33 +60,37 @@ class ConvModel(keras.Model):
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
-<<<<<<< HEAD
-        self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
-        self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
-        self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
-=======
         self.alea = tf.keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3))
         self.crop = tf.keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3))
-        self.conv1 = tf.keras.layers.Conv2D(2, 9, strides=(4, 4), padding="same", activation='elu', name="conv1")
-        self.conv2 = tf.keras.layers.Conv2D(4, 5, strides=(2, 2), padding="same", activation='elu', name="conv2")
-        self.conv3 = tf.keras.layers.Conv2D(8, 4, strides=(1, 1), padding="same", activation='elu', name="conv3")
->>>>>>> 60ec10f47aaeb7b06c04a5d6d8f4489115be1c4b
+        self.conv1_1 = tf.keras.layers.Conv2D(16, 9, strides=(4, 4), padding="same", activation='elu', name="conv1_1")
+        self.conv1_2 = tf.keras.layers.Conv2D(32, 5, strides=(2, 2), padding="same", activation='elu', name="conv1_2")
+        self.conv1_3 = tf.keras.layers.Conv2D(64, 4, strides=(1, 1), padding="same", activation='elu', name="conv1_3")
+        self.pool1 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
+        
+        self.conv2_1 = tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_1")
+        self.conv2_2 = tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_2")
+        self.conv2_3 = tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_3")
+        self.pool2 = keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same")
         # Flatten the convolution
         self.flatten = keras.layers.Flatten(name="flatten")
         # Dense layers
-<<<<<<< HEAD
-        self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
+        self.d1 = keras.layers.Dense(1024, activation='elu', name="d1")
         self.out = keras.layers.Dense(1, activation='sigmoid', name="output")
-=======
-        self.d1 = tf.keras.layers.Dense(100, activation='elu', name="d1")
-        self.out = tf.keras.layers.Dense(1, activation='sigmoid', name="output")
->>>>>>> 60ec10f47aaeb7b06c04a5d6d8f4489115be1c4b
 
     def call(self, image):
-        conv1 = self.conv1(image)
-        conv2 = self.conv2(conv1)
-        conv3 = self.conv3(conv2)
-        flatten = self.flatten(conv3)
+        alea = self.alea(image)
+        crop = self.crop(alea)
+        conv1_1 = self.conv1_1(crop)
+        conv1_2 = self.conv1_2(conv1_1)
+        conv1_3 = self.conv1_3(conv1_2)
+        pool1 = self.pool1(conv1_3)
+
+        conv2_1 = self.conv2_1(pool1)
+        conv2_2 = self.conv2_2(conv2_1)
+        conv2_3 = self.conv2_3(conv2_2)
+        pool2 = self.pool2(conv2_3)
+
+        flatten = self.flatten(pool2)
         d1 = self.d1(flatten)
         output = self.out(d1)
         return output
@@ -102,8 +106,8 @@ y_train = data[2]
 y_valid = data[3]
 
 # Peut etre a retirer next
-images, rotations = get_data(1280,x_train,y_train)
-images_valid, rotations_valid = get_data(256,x_valid,y_valid)
+images, rotations = get_data(6831,x_train,y_train)
+images_valid, rotations_valid = get_data(1206,x_valid,y_valid)
 
 # conversion des images de float 64 en 32 car con2d veut du 32
 images = images.astype(np.float32)
@@ -138,7 +142,7 @@ model = ConvModel()
 
 
 loss_object = tf.keras.losses.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(lr=0.0001)
+optimizer = tf.keras.optimizers.Adam(lr=0.00001)
 #track the evolution
 # Define our metrics
 train_loss = tf.keras.metrics.Mean('train_loss')
@@ -181,8 +185,8 @@ def valid_step(image, rotations):
     valid_accuracy(rotations, predictions)
         
 
-epochs = 5
-batch_size = 32
+epochs = 10
+batch_size = 64
 
 train_log_dir = 'logs/gradient_tape/' + 'v1' + '/train'
 test_log_dir = 'logs/gradient_tape/' + 'V1' + '/test'
@@ -221,5 +225,5 @@ for epoch in range(epochs):
     train_loss.reset_states()
 
 
-model.save("modelLite.h5")
+model.save_weights('my_model_weights.h5')
 
