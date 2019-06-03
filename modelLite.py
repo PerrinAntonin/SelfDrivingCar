@@ -60,14 +60,27 @@ class ConvModel(keras.Model):
     def __init__(self):
         super(ConvModel, self).__init__()
         # Convolutions
+<<<<<<< HEAD
         self.conv1 = keras.layers.Conv2D(32, 4, activation='relu', name="conv1")
         self.conv2 = keras.layers.Conv2D(64, 3, activation='relu', name="conv2")
         self.conv3 = keras.layers.Conv2D(128, 3, activation='relu', name="conv3")
+=======
+        self.alea = tf.keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3))
+        self.crop = tf.keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3))
+        self.conv1 = tf.keras.layers.Conv2D(2, 9, strides=(4, 4), padding="same", activation='elu', name="conv1")
+        self.conv2 = tf.keras.layers.Conv2D(4, 5, strides=(2, 2), padding="same", activation='elu', name="conv2")
+        self.conv3 = tf.keras.layers.Conv2D(8, 4, strides=(1, 1), padding="same", activation='elu', name="conv3")
+>>>>>>> 60ec10f47aaeb7b06c04a5d6d8f4489115be1c4b
         # Flatten the convolution
         self.flatten = keras.layers.Flatten(name="flatten")
         # Dense layers
+<<<<<<< HEAD
         self.d1 = keras.layers.Dense(128, activation='relu', name="d1")
         self.out = keras.layers.Dense(1, activation='sigmoid', name="output")
+=======
+        self.d1 = tf.keras.layers.Dense(100, activation='elu', name="d1")
+        self.out = tf.keras.layers.Dense(1, activation='sigmoid', name="output")
+>>>>>>> 60ec10f47aaeb7b06c04a5d6d8f4489115be1c4b
 
     def call(self, image):
         conv1 = self.conv1(image)
