@@ -27,6 +27,7 @@ def load_data():
     data_df = pd.read_csv(os.path.join(os.getcwd(),DATA_PATH, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
+    print(y.shape)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=0)
     print("data find")
     return X_train, X_test, y_train, y_test
@@ -106,8 +107,8 @@ y_train = data[2]
 y_valid = data[3]
 
 # Peut etre a retirer next
-images, rotations = get_data(6831,x_train,y_train)
-images_valid, rotations_valid = get_data(1206,x_valid,y_valid)
+images, rotations = get_data(2277,x_train,y_train)
+images_valid, rotations_valid = get_data(402,x_valid,y_valid)
 
 # conversion des images de float 64 en 32 car con2d veut du 32
 images = images.astype(np.float32)
@@ -224,6 +225,12 @@ for epoch in range(epochs):
     train_accuracy.reset_states()
     train_loss.reset_states()
 
-
+# serialize model to YAML
+model_yaml = model.to_yaml()
+with open("model.yaml", "w") as yaml_file:
+    yaml_file.write(model_yaml)
+# serialize weights to HDF5
 model.save_weights('my_model_weights.h5')
+print("Saved model to disk")
+
 
