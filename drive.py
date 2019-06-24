@@ -8,9 +8,13 @@ import numpy as np
 import socketio
 import eventlet
 import eventlet.wsgi
-#from PIL import Image
+from PIL  import Image
 from flask import Flask
 from io import BytesIO
+
+from tensorflow.python import keras
+from tensorflow.python.keras import metrics, optimizers, losses
+from tensorflow.python.keras.models import Sequential
 
 import tensorflow as tf
 import h5py
@@ -19,6 +23,29 @@ sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
+
+def ConvModel():
+    model = Sequential()
+    # Convolutions
+    model.add(tf.keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3)))
+    model.add(tf.keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3)))
+    model.add(tf.keras.layers.Conv2D(16, 9, strides=(4, 4), padding="same", activation='elu', name="conv1_1"))
+    model.add(tf.keras.layers.Conv2D(32, 5, strides=(2, 2), padding="same", activation='elu', name="conv1_2"))
+    model.add(tf.keras.layers.Conv2D(64, 4, strides=(1, 1), padding="same", activation='elu', name="conv1_3"))
+    model.add(keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
+    
+    model.add(tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_1"))
+    model.add(tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_2"))
+    model.add(tf.keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_3"))
+    model.add(tf.keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
+    # Flatten the convolution
+    model.add(tf.keras.layers.Flatten(name="flatten"))
+    # Dense layers
+    model.add(tf.keras.layers.Dense(1024, activation='elu', name="d1"))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid', name="output"))
+    adam = optimizers.Adam(lr=0.00001)
+    model.compile(loss="mse", optimizer=adam)
+    return model
 
 
 class SimplePIController:
@@ -111,7 +138,11 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    model = tf.keras.models.load_weights(args.model)
+    model = ConvModel()
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
+    model.save_weights("model.h5")
+    print("Saved model to disk")
+    #model = tf.keras.models.load_weights(args.model)
 
     if args.image_folder != '':
         print("Creating image folder at {}".format(args.image_folder))
@@ -129,3 +160,6 @@ if __name__ == '__main__':
 
     # deploy as an eventlet WSGI server
 eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
+
+
+#https://machinelearningmastery.com/save-load-keras-deep-learning-models/

@@ -143,7 +143,7 @@ model = ConvModel()
 
 
 loss_object = tf.keras.losses.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(lr=0.00001)
+optimizer = tf.keras.optimizers.Adam(lr=0.000001)
 #track the evolution
 # Define our metrics
 train_loss = tf.keras.metrics.Mean('train_loss')
@@ -226,9 +226,9 @@ for epoch in range(epochs):
     train_loss.reset_states()
 
 # serialize model to YAML
-model_yaml = model.to_yaml()
-with open("model.yaml", "w") as yaml_file:
-    yaml_file.write(model_yaml)
+#model_yaml = model.to_yaml()
+#with open("model.yaml", "w") as yaml_file:
+    #yaml_file.write(model_yaml)
 # serialize weights to HDF5
 model.save_weights('my_model_weights.h5')
 print("Saved model to disk")
