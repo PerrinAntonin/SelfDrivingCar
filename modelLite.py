@@ -130,8 +130,8 @@ scaled_images = scaler.fit_transform(images.reshape(-1, 160*320))
 scaled_images_valid = scaler.transform(images_valid.reshape(-1, 160*320))
 print("Moyenne et ecart type des images normalisé", scaled_images.mean(), scaled_images.std())
 
-scaled_images = scaled_images.reshape(-1, 160,320,3)
-scaled_images_valid = scaled_images_valid.reshape(-1, 160,320,3)
+scaled_images = images.reshape(-1, 160,320,3)
+scaled_images_valid = images_valid.reshape(-1, 160,320,3)
 print("scaled images after normalisation",scaled_images.shape)
 
 train_dataset = tf.data.Dataset.from_tensor_slices((scaled_images, rotations))
@@ -140,7 +140,6 @@ train_dataset = train_dataset.shuffle(1280 * 50)
 valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
 
 model = ConvModel()
-
 
 loss_object = tf.keras.losses.MeanSquaredError()
 optimizer = tf.keras.optimizers.Adam(lr=0.000001)
@@ -233,4 +232,10 @@ for epoch in range(epochs):
 model.save_weights('my_model_weights.h5')
 print("Saved model to disk")
 
+# Export the model to a SavedModel
+#keras.experimental.export_saved_model(model, 'saved_model.h5')
+
+
+model.save('my_model.h5')
+print("Saved model to disk")
 
