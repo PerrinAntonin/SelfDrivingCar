@@ -8,13 +8,9 @@ import numpy as np
 import socketio
 import eventlet
 import eventlet.wsgi
-from PIL  import Image
+from PIL import Image
 from flask import Flask
 from io import BytesIO
-
-from tensorflow.python import keras
-from tensorflow.python.keras import metrics, optimizers, losses
-from tensorflow.python.keras.models import Sequential
 
 import tensorflow as tf
 import h5py
@@ -23,30 +19,6 @@ sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
-
-def ConvModel():
-    models = Sequential()
-    # Convolutions
-    models.add(keras.layers.Lambda(lambda x: (x / 127.5) - 1., input_shape = (160, 320, 3)))
-    models.add(keras.layers.Cropping2D(cropping=((70, 25), (0, 0)), input_shape = (160, 320, 3)))
-    models.add(keras.layers.Conv2D(16, 9, strides=(4, 4), padding="same", activation='elu', name="conv1_1"))
-    models.add(keras.layers.Conv2D(32, 5, strides=(2, 2), padding="same", activation='elu', name="conv1_2"))
-    models.add(keras.layers.Conv2D(64, 4, strides=(1, 1), padding="same", activation='elu', name="conv1_3"))
-    models.add(keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
-    
-    models.add(keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_1"))
-    models.add(keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_2"))
-    models.add(keras.layers.Conv2D(64, 3, strides=(1, 1), padding="same", activation='elu', name="conv2_3"))
-    models.add(keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
-    # Flatten the convolution
-    models.add(keras.layers.Flatten(name="flatten"))
-    # Dense layers
-    models.add(keras.layers.Dense(1024, activation='elu', name="d1"))
-    models.add(keras.layers.Dense(1, activation='sigmoid', name="output"))
-    adam = optimizers.Adam(lr=0.000001)
-    models.compile(loss="mean_squared_error", optimizer=adam, metrics=['mean_squared_error'])
-    return models
-
 
 
 class SimplePIController:
@@ -73,8 +45,9 @@ class SimplePIController:
 controller = SimplePIController(0.1, 0.002)
 # 781 is good to 9
 # 881
-set_speed = 10
+set_speed = 15
 controller.set_desired(set_speed)
+
 @sio.on('telemetry')
 def telemetry(sid, data):
     if data:
@@ -138,10 +111,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    #model = ConvModel()
-    #model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
-    model = keras.models.load_model(args.model)
-    print("Weight loaded.")
+    model = tf.keras.models.load_model(args.model)
 
     if args.image_folder != '':
         print("Creating image folder at {}".format(args.image_folder))
@@ -158,7 +128,4 @@ if __name__ == '__main__':
     app = socketio.Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
-eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
-
-
-#https://machinelearningmastery.com/save-load-keras-deep-learning-models/
+    eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
