@@ -49,6 +49,10 @@ def get_data(batch_size,imageData, rotationData):
         #ajou de la correction
         rotation = rotation + angle_correction[i]
         #ajou des informations a la liste
+        if random.random() > 0.5:
+            img = cv2.flip(img, 1)
+            rotation = rotation * -1
+
         images.append(img)
         rotations.append(rotation)
 
@@ -65,10 +69,6 @@ def ConvModel():
     model.add(Conv2D(32, 4, strides=(1, 1), padding="same", activation="elu"))
     model.add(MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
     
-    model.add(Conv2D(32, 3, strides=(1, 1), padding="same", activation='elu'))
-    model.add(Conv2D(32, 3, strides=(1, 1), padding="same", activation='elu'))
-    model.add(Conv2D(32, 3, strides=(1, 1), padding="same", activation='elu'))
-    model.add(MaxPooling2D(pool_size=[2, 2], strides=2, padding="same"))
     model.add(Flatten())
     model.add(Dropout(.6))
     model.add(Dense(1024, activation="elu"))
@@ -123,7 +123,7 @@ def main():
     #train_dataset = train_dataset.shuffle(1280 * 50)
     #valid_dataset = tf.data.Dataset.from_tensor_slices((scaled_images_valid, rotations_valid))
 
-
+    print("testest",rotations.shape)
     model = ConvModel()
     model.summary()
     BATCH_SIZE = 64
