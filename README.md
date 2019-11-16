@@ -4,11 +4,11 @@ My First real project using deep learning using Tensorflow and keras with a conv
 
 ![](vid/video.gif)
 
-## Model Architecture and Training Strategy
+## Model Architecture and Training method
 
 I train the model using a convolutional neural network predicting one linear output. first of all to reduce the overfitting, I used data augmentation by flipping each image of the dataset and by using the left/right camera. The model used an Adam optimizer For the training data, I used  the central, left and right camera, each one, randomly flip.
 
-## Final Model Architecture
+## Model Architecture
 
 The architecture is the following:
 <ul>
